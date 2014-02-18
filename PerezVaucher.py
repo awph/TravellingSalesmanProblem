@@ -1,5 +1,8 @@
 import pygame
+import math
+import random
 import sys
+import time
 from pygame.locals import KEYDOWN, QUIT, MOUSEBUTTONDOWN, K_RETURN
 
 cities = []
@@ -12,7 +15,7 @@ def citiesFromFile(file):
     cities = []
     for line in f:
         comp = line.rstrip('\n').split(' ')
-        city = (comp[0], (comp[1], comp[2]))
+        city = (comp[0], (int(comp[1]), int(comp[2])))
         cities.append(city)
 
     return cities
@@ -64,9 +67,30 @@ def ga_solve(file=None, gui=True, maxtime=0):
         cities = citiesFromFile(file)
     else:
         citiesByMouse()
-
+    drawCities(cities)
     print(cities)
-        
+    initial_population(cities)
+    print(cities)
+    t1 = time.time()
+    while maxtime != 0 and time.time() - t1 <= maxtime:
+        print(total_distance(cities))
+
+def total_distance(cities):
+    distance = 0
+    c2 = None
+    for c in cities:
+        c1 = c2
+        c2 = c
+        if c1 != None and c2 != None:
+            distance += distance_between(c1, c2)
+    return distance
+
+def distance_between(city1, city2):
+    return math.sqrt(pow(city1[1][0] - city2[1][0], 2) + pow(city1[1][1] - city2[1][1], 2))
+
+def initial_population(cities):
+    random.shuffle(cities)
+
 
 if __name__ == '__main__':
     import argparse
