@@ -20,11 +20,17 @@ def citiesFromFile(file):
 
     return cities
 
-def drawCities(positions):
-    #screen.fill(0)
-    for pos in positions:
-        pygame.draw.circle(screen, city_color, pos[1], city_radius)
-    pygame.display.flip()
+def drawCities(positions, connected = False):
+    if screen == None:
+        print(positions)
+    else:
+        screen.fill(0)
+        for pos in positions:
+            pygame.draw.circle(screen, city_color, pos[1], city_radius)
+
+        if connected:
+            pygame.draw.lines(screen, city_color, True, [x[1] for x in cities])
+        pygame.display.flip()
 
 def setupGui():
     global screen
@@ -35,6 +41,7 @@ def setupGui():
 
 
 def citiesByMouse():
+    global screen
     wasGui = True
     if screen == None:
         wasGui = False
@@ -55,7 +62,7 @@ def citiesByMouse():
 
     if not wasGui:
         pygame.quit()
-
+        screen = None
 
 def ga_solve(file=None, gui=True, maxtime=0):
     global cities
@@ -72,8 +79,10 @@ def ga_solve(file=None, gui=True, maxtime=0):
     initial_population(cities)
     print(cities)
     t1 = time.time()
-    while maxtime != 0 and time.time() - t1 <= maxtime:
+    while maxtime == 0 or time.time() - t1 <= maxtime:
         print(total_distance(cities))
+        initial_population(cities)
+        drawCities(cities, True)
 
 def total_distance(cities):
     distance = 0
