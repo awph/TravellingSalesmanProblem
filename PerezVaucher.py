@@ -7,8 +7,14 @@ from pygame.locals import KEYDOWN, QUIT, MOUSEBUTTONDOWN, K_RETURN
 
 cities = []
 screen = None
-city_color = [10,10,200] # blue
+city_color = (10,10,200) # blue
+summary_color = (255, 255, 255)
+city_font_size = 16 # pixels
+summary_font_size = 26
+screen_size = (500, 500)
 city_radius = 2
+city_font = None
+summary_font = None
 
 def citiesFromFile(file):
     f = open(file, 'r')
@@ -20,22 +26,36 @@ def citiesFromFile(file):
 
     return cities
 
-def drawCities(positions, connected = False):
+def drawCities(positions, connected = False, generation = -1, distance = -1):
     if screen == None:
         print(positions)
     else:
         screen.fill(0)
         for pos in positions:
-            pygame.draw.circle(screen, city_color, pos[1], city_radius)
+            text = city_font.render(pos[0], True, city_color, (0, 0, 0))
+            textrect = text.get_rect()
+            textrect.centerx = pos[1][0]
+            textrect.centery = pos[1][1]
+            screen.blit(text, textrect)
 
         if connected:
             pygame.draw.lines(screen, city_color, True, [x[1] for x in cities])
+
+        if generation != -1 and distance != -1:
+            text = city_font.render('Generation n°' + str(generation) + '; Distance = ' + str(round(distance, 2)), True, summary_color, (0, 0, 0))
+            textrect = text.get_rect()
+            textrect.centerx = screen_size[0] / 2.0
+            textrect.centery = screen_size[1] - summary_font_size / 4.0
+            screen.blit(text, textrect)
+
         pygame.display.flip()
 
 def setupGui():
-    global screen
+    global screen, city_font, summary_font
     pygame.init()
-    pygame.display.set_mode((500, 500))
+    city_font = pygame.font.SysFont(None, city_font_size)
+    summary_font = pygame.font.SysFont(None, summary_font_size)
+    pygame.display.set_mode(screen_size)
     pygame.display.set_caption('TSP')
     screen = pygame.display.get_surface()
 
@@ -49,6 +69,7 @@ def citiesByMouse():
 
 
     collecting = True
+    i = 0
     while collecting:
         for event in pygame.event.get():
             if event.type == QUIT:
@@ -56,7 +77,8 @@ def citiesByMouse():
             elif event.type == KEYDOWN and event.key == K_RETURN:
                 collecting = False
             elif event.type == MOUSEBUTTONDOWN:
-                city = ("City", pygame.mouse.get_pos())
+                city = ('v' + str(i), pygame.mouse.get_pos())
+                i += 1
                 cities.append(city)
                 drawCities(cities)
 
@@ -79,10 +101,12 @@ def ga_solve(file=None, gui=True, maxtime=0):
     initial_population(cities)
     print(cities)
     t1 = time.time()
+    gen = 0
     while maxtime == 0 or time.time() - t1 <= maxtime:
         print(total_distance(cities))
         initial_population(cities)
-        drawCities(cities, True)
+        drawCities(cities, True, gen, total_distance(cities))
+        gen += 1
 
 def total_distance(cities):
     distance = 0
@@ -92,6 +116,8 @@ def total_distance(cities):
         c2 = c
         if c1 != None and c2 != None:
             distance += distance_between(c1, c2)
+
+    distance += distance_between(cities[0], cities[len(cities) -1])
     return distance
 
 def distance_between(city1, city2):
