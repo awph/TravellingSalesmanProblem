@@ -9,6 +9,7 @@ cities = []
 screen = None
 city_color = [10,10,200] # blue
 city_radius = 2
+elitism = 4
 
 def citiesFromFile(file):
     f = open(file, 'r')
@@ -75,14 +76,86 @@ def ga_solve(file=None, gui=True, maxtime=0):
     else:
         citiesByMouse()
     drawCities(cities)
-    print(cities)
-    initial_population(cities)
-    print(cities)
+
+    population = initial_population(cities, 12)
     t1 = time.time()
     while maxtime == 0 or time.time() - t1 <= maxtime:
-        print(total_distance(cities))
-        initial_population(cities)
-        drawCities(cities, True)
+        population.sort(key=lambda s: s[1])
+        elites = []
+        for i in range(0,elitism):
+            elites.append(population[i])
+        childs = cross(elites)
+        for i in range(len(population) - len(childs), len(population)):
+            population[i] = childs[len(population) - i - len(childs)]
+
+
+def cross(subpopulation):
+    crossed = []
+    s2 = None
+    for solution in subpopulation:
+        s1 = s2
+        s2 = solution[0]
+        p1 = random.randint(1, len(s2) - 2)
+        p2 = p1
+        while p1 == p2:
+            p2 = random.randint(1, len(s2) - 2)
+        if p1 > p2:
+            temp = p2
+            p2 = p1
+            p1 = temp
+        if s1 != None and s2 != None:
+            childs = cross_two_solutions(s1, s2, p1, p2)
+            crossed += childs
+
+    return crossed
+
+def cross_two_solutions(solution1, solution2, p1, p2):
+    childs = []
+    middle_cities1 = []
+    middle_cities2 = []
+    for i in range(p1, p2):
+        middle_cities1.append(solution1[i])
+    for i in range(p1, p2):
+        middle_cities2.append(solution2[i])
+    pack_cities(solution1, middle_cities2, p1, p2)
+    pack_cities(solution2, middle_cities1, p1, p2)
+
+    for i in range(p1, p2):
+        solution1[i] = middle_cities2[i - p1]
+        solution2[i] = middle_cities1[i - p1]
+
+    solution1 = (solution1, total_distance(solution1))
+    solution2 = (solution2, total_distance(solution2))
+
+    if is_solutions_equal(solution1, solution2):
+        return [solution1]
+    return [solution1, solution2]
+
+def is_solutions_equal(solution1, solution2):
+    for i in range(0 , len(solution1)):
+        if solution1[0][i][0] != solution2[0][i][0]:
+            return False
+    return True
+
+def pack_cities(solution, middle_cities, p1, p2):
+    for i in range(0, len(solution)):
+        if solution[i] in middle_cities:
+            solution[i] = None
+    i = p2
+    while i != p1:
+        if solution[i] == None:
+            j = i + 1
+            while j >= len(solution) - 1 or solution[j] == None:
+                if j >= len(solution) - 1:
+                    j = 0
+                else:
+                    j += 1
+            solution[i] = solution[j]
+            solution[j] = None
+        if i >= len(solution) - 1:
+            i = 0
+        else:
+            i += 1
 
 def total_distance(cities):
     distance = 0
@@ -97,8 +170,13 @@ def total_distance(cities):
 def distance_between(city1, city2):
     return math.sqrt(pow(city1[1][0] - city2[1][0], 2) + pow(city1[1][1] - city2[1][1], 2))
 
-def initial_population(cities):
-    random.shuffle(cities)
+def initial_population(cities, quantity):
+    population = []
+    while len(population) < quantity:
+        solution = cities.copy()
+        random.shuffle(solution)
+        population.append((solution, total_distance(solution)))
+    return population
 
 
 if __name__ == '__main__':
