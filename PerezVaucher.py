@@ -17,8 +17,9 @@ city_font = None
 summary_font = None
 
 cities = []
+population_size_percent = 1000 / 100
 elitism_percent = 30 / 100
-population_size = 100
+mutation_percent = 1 / 100
 
 
 def citiesFromFile(file):
@@ -34,7 +35,7 @@ def citiesFromFile(file):
 
 def drawCities(positions, connected=False, generation=-1, distance=-1):
     if screen == None:
-        print(positions)
+        print(distance, ' => ', positions)
     else:
         screen.fill(0)
         for pos in positions:
@@ -107,6 +108,9 @@ def ga_solve(file=None, gui=True, maxtime=0):
         citiesByMouse()
     drawCities(cities)
 
+    population_size = len(cities) * population_size_percent
+    # population_size = min(population_size, len(cities) * (len(cities) + 1) / 2)
+
     # Initial population
     population = initial_population(cities, population_size)
 
@@ -120,24 +124,33 @@ def ga_solve(file=None, gui=True, maxtime=0):
         if fittest is None or fittest[1] > population[0][1]:
             fittest = population[0].copy()
             drawCities(fittest[0], True, gen, fittest[1])
-        # Sort for selection
-        population.sort(key=lambda s: s[1])
         # Selection
-        elites = []
-        for i in range(0, int(len(population) * elitism_percent)):
-            elites.append(population[i])
+        elites = selection(population)
         # Crossover
-        childs = cross(elites)
-        for i in range(len(population) - len(childs), len(population)):
-            population[i] = childs[len(population) - i - len(childs)]
+        children = cross(elites)
+        for solution in children:
+            if len(elites) < population_size or not is_solution_in_population(solution, elites):
+                elites.append(solution)
         # Mutate
-        mutate(population[random.randint(0, len(population) - 1)][0])
+        for i in range(0, int(len(elites) * mutation_percent)):
+            mutate(elites[random.randint(0, len(elites) - 1)][0])
+        population = elites
         gen += 1
 
 
 def evaluate(population):
     for solution in population:
         solution[1] = total_distance(solution[0])
+
+
+def selection(population):
+    # Sort for selection
+    population.sort(key=lambda s: s[1])
+    elites = []
+    population_size = int(len(cities) * population_size_percent) # int(len(population) * elitism_percent)
+    for i in range(0, population_size):
+        elites.append(population[i])
+    return elites
 
 
 def cross(subpopulation):
@@ -155,8 +168,8 @@ def cross(subpopulation):
             p2 = p1
             p1 = temp
         if s1 is not None and s2 is not None:
-            childs = cross_two_solutions(s1, s2, p1, p2)
-            crossed += childs
+            children = cross_two_solutions(s1, s2, p1, p2)
+            crossed += children
 
     return crossed
 
@@ -175,8 +188,8 @@ def cross_two_solutions(solution1, solution2, p1, p2):
         solution1[i] = middle_cities2[i - p1]
         solution2[i] = middle_cities1[i - p1]
 
-    solution1 = [solution1, None]
-    solution2 = [solution2, None]
+    solution1 = [solution1, total_distance(solution1)]
+    solution2 = [solution2, total_distance(solution2)]
 
     if is_solutions_equal(solution1, solution2):
         return [solution1]
@@ -238,12 +251,18 @@ def distance_between(city1, city2):
     return math.sqrt(pow(city1[1][0] - city2[1][0], 2) + pow(city1[1][1] - city2[1][1], 2))
 
 
+def is_solution_in_population(solution, population):
+    return any(abs(sol[1] - solution[1]) < 1e-9 for sol in population)
+
+
 def initial_population(cities, quantity):
     population = []
     while len(population) < quantity:
         solution = cities.copy()
         random.shuffle(solution)
-        population.append([solution, None])
+        solution = [solution, total_distance(solution)]
+        # if not is_solution_in_population(solution, population):
+        population.append(solution)
     return population
 
 
