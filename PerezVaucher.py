@@ -119,7 +119,7 @@ def ga_solve(file=None, gui=True, maxtime=0):
     fittest = None
 
     while maxtime == 0 or time.time() - t1 <= maxtime:
-        print(gen)
+        #print(gen)
         # Evaluate
         evaluate(population)
         # Check the fittest
@@ -234,6 +234,11 @@ def cross_two_solutions(solution1, solution2, p1, p2):
 
 
 def mutate(solution):
+    #mutate_swap(solution)
+    mutate_2opt(solution)
+
+
+def mutate_swap(solution):
     p1 = random.randint(0, len(solution) - 1)
     p2 = p1
     while p1 == p2:
@@ -241,6 +246,25 @@ def mutate(solution):
     temp = solution[p1]
     solution[p1] = solution[p2]
     solution[p2] = temp
+
+def mutate_2opt(solution):
+    p1 = random.randint(0, len(solution) - 1)
+    p2 = p1 + 1 if p1 + 1 < len(solution) else 0
+    p3, p4 = p1, p2
+    while abs(p1 - p3) < 2 or abs(p2 - p4) < 2:
+        p3 = random.randint(0, len(solution) - 1)
+        p4 = p3 + 1 if p3 + 1 < len(solution) else 0
+    if distance_between(solution[p1], solution[p2]) + distance_between(solution[p3], solution[p4]) > distance_between(solution[p1], solution[p2]) + distance_between(solution[p3], solution[p4]):
+        solution[p2], solution[p3] = solution[p3], solution[p2]
+        reverse(solution, p2, p3)
+
+
+def reverse(solution, p1, p2):
+    trip = solution[p1:p2] if p1 < p2 else solution[p1:] + solution[:p2]
+    while p1 != p2:
+        solution[p1] = trip.pop()
+        p1 = p1 + 1 if p1 + 1 < len(solution) else 0
+
 
 
 def is_solutions_similar(solution1, solution2):
