@@ -20,6 +20,7 @@ cities = []
 population_size_percent = 1000 / 100
 elitism_percent = 30 / 100
 mutation_percent = 1 / 100
+tournament_size = 20
 
 
 def citiesFromFile(file):
@@ -118,6 +119,7 @@ def ga_solve(file=None, gui=True, maxtime=0):
     fittest = None
 
     while maxtime == 0 or time.time() - t1 <= maxtime:
+        print(gen)
         # Evaluate
         evaluate(population)
         # Check the fittest
@@ -127,10 +129,8 @@ def ga_solve(file=None, gui=True, maxtime=0):
         # Selection
         elites = selection(population)
         # Crossover
-        children = cross(elites)
-        for solution in children:
-            if len(elites) < population_size or not is_solution_in_population(solution, elites):
-                elites.append(solution)
+        children = cross(elites, population_size - len(elites))
+        elites += children
         # Mutate
         for i in range(0, int(len(elites) * mutation_percent)):
             mutate(elites[random.randint(0, len(elites) - 1)][0])
@@ -144,43 +144,80 @@ def evaluate(population):
 
 
 def selection(population):
+    elite_quantity = int(len(cities) * elitism_percent) # int(len(population) * elitism_percent)
+    #return selection_elites(population, elite_quantity)
+    #return selection_tournament(population, elite_quantity)
+    return selection_SENGOKU(population, elite_quantity)
+
+
+def selection_elites(population, elite_quantity):
     # Sort for selection
     population.sort(key=lambda s: s[1])
     elites = []
-    population_size = int(len(cities) * population_size_percent) # int(len(population) * elitism_percent)
-    for i in range(0, population_size):
+    for i in range(0, elite_quantity):
         elites.append(population[i])
     return elites
 
 
-def cross(subpopulation):
+
+def selection_tournament(population, elite_quantity):
+    winners = []
+    for i in range(0, elite_quantity):
+        competitors = []
+        for j in range(0, tournament_size):
+            competitor = population[random.randint(0, len(population)-1)]
+            #while competitor in competitors:
+            #    competitor = population[random.randint(0, len(population)-1)]
+            competitors.append(competitor)
+        competitors.sort(key=lambda s: s[1])
+        winners.append(competitors[0])
+        population.remove(competitors[0])
+    return winners
+
+
+
+def selection_SENGOKU(population, elite_quantity):
+    population.sort(key=lambda s: s[1])
+    i = 1
+    while i < len(population):
+        if is_solutions_similar(population[i - 1], population[i]):
+            del population[i]
+        else:
+            i += 1
+    while len(population) > elite_quantity:
+        del population[-1]
+    return population
+
+
+def cross(subpopulation, quantity):
     crossed = []
-    s2 = None
-    for solution in subpopulation:
-        s1 = s2
-        s2 = solution[0]
-        p1 = random.randint(1, len(s2) - 2)
+    while len(crossed) < quantity:
+        s1 = subpopulation[random.randint(0, len(subpopulation) - 1)]
+        s2 = s1
+        while s1 == s2:
+            s2 = subpopulation[random.randint(0, len(subpopulation) - 1)]
+        p1 = random.randint(1, len(s1[0]) - 2)
         p2 = p1
         while p1 == p2:
-            p2 = random.randint(1, len(s2) - 2)
+            p2 = random.randint(1, len(s2[0]) - 2)
         if p1 > p2:
             temp = p2
             p2 = p1
             p1 = temp
-        if s1 is not None and s2 is not None:
-            children = cross_two_solutions(s1, s2, p1, p2)
-            crossed += children
 
+        children = cross_two_solutions(s1[0], s2[0], p1, p2)
+
+        crossed += children
+
+    if len(crossed) > quantity:
+        return crossed[:-1]
     return crossed
 
 
 def cross_two_solutions(solution1, solution2, p1, p2):
-    middle_cities1 = []
-    middle_cities2 = []
-    for i in range(p1, p2):
-        middle_cities1.append(solution1[i])
-    for i in range(p1, p2):
-        middle_cities2.append(solution2[i])
+    middle_cities1 = solution1[p1:p2]
+    middle_cities2 = solution2[p1:p2]
+
     pack_cities(solution1, middle_cities2, p1, p2)
     pack_cities(solution2, middle_cities1, p1, p2)
 
@@ -205,6 +242,9 @@ def mutate(solution):
     solution[p1] = solution[p2]
     solution[p2] = temp
 
+
+def is_solutions_similar(solution1, solution2):
+    return abs(solution1[1] - solution2[1]) < 1e-6
 
 def is_solutions_equal(solution1, solution2):
     for i in range(0, len(solution1)):
