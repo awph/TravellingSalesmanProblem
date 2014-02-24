@@ -120,7 +120,8 @@ def ga_solve(file=None, gui=True, maxtime=0):
 
     while maxtime == 0 or time.time() - t1 <= maxtime:
         # Evaluate
-        evaluate(population)
+        # evaluate(population) No need to evaluate(because score is always compute when new solution is done), just sort it
+        population.sort(key=lambda s: s[1])
         # Check the fittest
         if fittest is None or fittest[1] > population[0][1]:
             print("gen : ", gen)
@@ -129,12 +130,8 @@ def ga_solve(file=None, gui=True, maxtime=0):
         # Selection
         elites = selection(population)
         # Crossover
-        ee = []
-        for e in elites:
-            ee.append([e[0].copy(),e[1]])
-
-        children = cross(elites.copy(), population_size - len(elites))
-        population = ee + children
+        children = crossover(elites, population_size - len(elites))
+        population = elites + children
         # Mutate
         for i in range(0, int(len(population) * mutation_percent)):
             mutate(population[random.randint(0, len(population) - 1)][0])
@@ -144,7 +141,6 @@ def ga_solve(file=None, gui=True, maxtime=0):
 def evaluate(population):
     for solution in population:
         solution[1] = total_distance(solution[0])
-    population.sort(key=lambda s: s[1])
 
 
 def selection(population):
@@ -154,14 +150,22 @@ def selection(population):
     return selection_SENGOKU(population, elite_quantity)
 
 
+def crossover(subpopulation, quantity):
+    return crossover_two_points(subpopulation, quantity)
+
+
+def mutate(solution):
+    #mutate_swap(solution)
+    #mutate_2opt(solution)
+    mutate_reverse(solution)
+
+
 def selection_elites(population, elite_quantity):
     # Sort for selection
-    population.sort(key=lambda s: s[1])
     elites = []
     for i in range(0, elite_quantity):
         elites.append(population[i])
     return elites
-
 
 
 def selection_tournament(population, elite_quantity):
@@ -179,9 +183,7 @@ def selection_tournament(population, elite_quantity):
     return winners
 
 
-
 def selection_SENGOKU(population, elite_quantity):
-    population.sort(key=lambda s: s[1])
     i = 1
     while i < len(population):
         if is_solutions_similar(population[i - 1], population[i]):
@@ -193,7 +195,7 @@ def selection_SENGOKU(population, elite_quantity):
     return population
 
 
-def cross(subpopulation, quantity):
+def crossover_two_points(subpopulation, quantity):
     crossed = []
     while len(crossed) < quantity:
         s1 = subpopulation[random.randint(0, len(subpopulation) - 1)]
@@ -209,7 +211,7 @@ def cross(subpopulation, quantity):
             p2 = p1
             p1 = temp
 
-        children = cross_two_solutions(s1[0], s2[0], p1, p2)
+        children = cross_two_solutions(s1[0].copy(), s2[0].copy(), p1, p2)
 
         crossed += children
 
@@ -229,18 +231,33 @@ def cross_two_solutions(solution1, solution2, p1, p2):
         solution1[i] = middle_cities2[i - p1]
         solution2[i] = middle_cities1[i - p1]
 
-    solution1 = [solution1.copy(), total_distance(solution1)]
-    solution2 = [solution2.copy(), total_distance(solution2)]
+    solution1 = [solution1, total_distance(solution1)]
+    solution2 = [solution2, total_distance(solution2)]
 
     if is_solutions_equal(solution1, solution2):
         return [solution1]
     return [solution1, solution2]
 
 
-def mutate(solution):
-    #mutate_swap(solution)
-    #mutate_2opt(solution)
-    mutate_reverse(solution)
+def pack_cities(solution, middle_cities, p1, p2):
+    for i in range(0, len(solution)):
+        if solution[i] in middle_cities:
+            solution[i] = None
+    i = p2
+    while i != p1:
+        if solution[i] is None:
+            j = i + 1
+            while j >= len(solution) - 1 or solution[j] is None:
+                if j >= len(solution) - 1:
+                    j = 0
+                else:
+                    j += 1
+            solution[i] = solution[j]
+            solution[j] = None
+        if i >= len(solution) - 1:
+            i = 0
+        else:
+            i += 1
 
 
 def mutate_swap(solution):
@@ -280,36 +297,15 @@ def reverse(solution, p1, p2):
         p1 = p1 + 1 if p1 + 1 < len(solution) else 0
 
 
-
 def is_solutions_similar(solution1, solution2):
     return abs(solution1[1] - solution2[1]) < 1e-6
+
 
 def is_solutions_equal(solution1, solution2):
     for i in range(0, len(solution1)):
         if solution1[0][i][0] != solution2[0][i][0]:
             return False
     return True
-
-
-def pack_cities(solution, middle_cities, p1, p2):
-    for i in range(0, len(solution)):
-        if solution[i] in middle_cities:
-            solution[i] = None
-    i = p2
-    while i != p1:
-        if solution[i] is None:
-            j = i + 1
-            while j >= len(solution) - 1 or solution[j] is None:
-                if j >= len(solution) - 1:
-                    j = 0
-                else:
-                    j += 1
-            solution[i] = solution[j]
-            solution[j] = None
-        if i >= len(solution) - 1:
-            i = 0
-        else:
-            i += 1
 
 
 def total_distance(cities):
@@ -339,7 +335,6 @@ def initial_population(cities, quantity):
         solution = cities.copy()
         random.shuffle(solution)
         solution = [solution, total_distance(solution)]
-        # if not is_solution_in_population(solution, population):
         population.append(solution)
     return population
 
