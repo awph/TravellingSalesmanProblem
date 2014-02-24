@@ -20,7 +20,7 @@ cities = []
 population_size_percent = 1000 / 100
 elitism_percent = 30 / 100
 mutation_percent = 1 / 100
-tournament_size = 20
+tournament_size = 15
 
 
 def citiesFromFile(file):
@@ -119,28 +119,32 @@ def ga_solve(file=None, gui=True, maxtime=0):
     fittest = None
 
     while maxtime == 0 or time.time() - t1 <= maxtime:
-        #print(gen)
         # Evaluate
         evaluate(population)
         # Check the fittest
         if fittest is None or fittest[1] > population[0][1]:
+            print("gen : ", gen)
             fittest = population[0].copy()
             drawCities(fittest[0], True, gen, fittest[1])
         # Selection
         elites = selection(population)
         # Crossover
-        children = cross(elites, population_size - len(elites))
-        elites += children
+        ee = []
+        for e in elites:
+            ee.append([e[0].copy(),e[1]])
+
+        children = cross(elites.copy(), population_size - len(elites))
+        population = ee + children
         # Mutate
-        for i in range(0, int(len(elites) * mutation_percent)):
-            mutate(elites[random.randint(0, len(elites) - 1)][0])
-        population = elites
+        for i in range(0, int(len(population) * mutation_percent)):
+            mutate(population[random.randint(0, len(population) - 1)][0])
         gen += 1
 
 
 def evaluate(population):
     for solution in population:
         solution[1] = total_distance(solution[0])
+    population.sort(key=lambda s: s[1])
 
 
 def selection(population):
@@ -166,8 +170,8 @@ def selection_tournament(population, elite_quantity):
         competitors = []
         for j in range(0, tournament_size):
             competitor = population[random.randint(0, len(population)-1)]
-            #while competitor in competitors:
-            #    competitor = population[random.randint(0, len(population)-1)]
+            while competitor in competitors:
+                competitor = population[random.randint(0, len(population)-1)]
             competitors.append(competitor)
         competitors.sort(key=lambda s: s[1])
         winners.append(competitors[0])
@@ -225,8 +229,8 @@ def cross_two_solutions(solution1, solution2, p1, p2):
         solution1[i] = middle_cities2[i - p1]
         solution2[i] = middle_cities1[i - p1]
 
-    solution1 = [solution1, total_distance(solution1)]
-    solution2 = [solution2, total_distance(solution2)]
+    solution1 = [solution1.copy(), total_distance(solution1)]
+    solution2 = [solution2.copy(), total_distance(solution2)]
 
     if is_solutions_equal(solution1, solution2):
         return [solution1]
@@ -235,7 +239,8 @@ def cross_two_solutions(solution1, solution2, p1, p2):
 
 def mutate(solution):
     #mutate_swap(solution)
-    mutate_2opt(solution)
+    #mutate_2opt(solution)
+    mutate_reverse(solution)
 
 
 def mutate_swap(solution):
@@ -247,6 +252,7 @@ def mutate_swap(solution):
     solution[p1] = solution[p2]
     solution[p2] = temp
 
+
 def mutate_2opt(solution):
     p1 = random.randint(0, len(solution) - 1)
     p2 = p1 + 1 if p1 + 1 < len(solution) else 0
@@ -257,6 +263,14 @@ def mutate_2opt(solution):
     if distance_between(solution[p1], solution[p2]) + distance_between(solution[p3], solution[p4]) > distance_between(solution[p1], solution[p2]) + distance_between(solution[p3], solution[p4]):
         solution[p2], solution[p3] = solution[p3], solution[p2]
         reverse(solution, p2, p3)
+
+
+def mutate_reverse(solution):
+    p1 = random.randint(0, len(solution) - 1)
+    p2 = p1
+    while p1 == p2:
+        p2 = random.randint(0, len(solution) - 1)
+    reverse(solution, p1, p2)
 
 
 def reverse(solution, p1, p2):
