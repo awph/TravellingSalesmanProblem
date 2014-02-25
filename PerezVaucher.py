@@ -107,6 +107,7 @@ def ga_solve(file=None, gui=True, maxtime=0):
         cities = citiesFromFile(file)
     else:
         citiesByMouse()
+
     drawCities(cities)
 
     population_size = len(cities) * population_size_percent
@@ -119,6 +120,10 @@ def ga_solve(file=None, gui=True, maxtime=0):
     fittest = None
 
     while maxtime == 0 or time.time() - t1 <= maxtime:
+        if screen != None:
+            if pygame.event.poll().type == QUIT:
+                sys.exit(0)
+
         # Evaluate
         # evaluate(population) No need to evaluate(because score is always compute when new solution is done), just sort it
         population.sort(key=lambda s: s[1])
@@ -126,7 +131,7 @@ def ga_solve(file=None, gui=True, maxtime=0):
         if fittest is None or fittest[1] > population[0][1]:
             print("gen : ", gen)
             fittest = population[0].copy()
-            drawCities(fittest[0], True, gen, fittest[1])
+        drawCities(fittest[0], True, gen, fittest[1])
         # Selection
         elites = selection(population)
         # Crossover
@@ -349,3 +354,4 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
     ga_solve(args.filename, args.nogui, args.maxtime)
+
