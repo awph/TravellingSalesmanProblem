@@ -120,9 +120,10 @@ def ga_solve(file=None, gui=True, maxtime=0):
     fittest = None
 
     while maxtime == 0 or time.time() - t1 <= maxtime:
-        if screen is None:
-            if pygame.event.poll().type == QUIT:
-                sys.exit(0)
+        if screen is not None:
+            for event in pygame.event.get():
+                if event.type == QUIT:
+                    sys.exit(0)
 
         # Evaluate
         # evaluate(population) No need to evaluate because score is always computed when new solution is done, just sort it
