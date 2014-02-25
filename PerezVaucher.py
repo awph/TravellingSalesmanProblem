@@ -47,7 +47,7 @@ def drawCities(positions, connected=False, generation=-1, distance=-1):
             screen.blit(text, textrect)
 
         if connected:
-            pygame.draw.lines(screen, city_color, True, [x[1] for x in cities])
+            pygame.draw.lines(screen, city_color, True, [x[1] for x in positions])
 
         if generation != -1 and distance != -1:
             text = city_font.render('Generation n°' + str(generation) + '; Distance = ' + str(round(distance, 2)), True,
@@ -130,7 +130,7 @@ def ga_solve(file=None, gui=True, maxtime=0):
         # Check the fittest
         if fittest is None or fittest[1] > population[0][1]:
             print("gen : ", gen)
-            fittest = population[0].copy()
+            fittest = [population[0][0].copy(), population[0][1]]
         drawCities(fittest[0], True, gen, fittest[1])
         # Selection
         elites = selection(population)
@@ -313,16 +313,16 @@ def is_solutions_equal(solution1, solution2):
     return True
 
 
-def total_distance(cities):
+def total_distance(solution):
     distance = 0
     c2 = None
-    for c in cities:
+    for c in solution:
         c1 = c2
         c2 = c
         if c1 is not None and c2 is not None:
             distance += distance_between(c1, c2)
 
-    distance += distance_between(cities[0], cities[len(cities) - 1])
+    distance += distance_between(solution[0], solution[len(solution) - 1])
     return distance
 
 
