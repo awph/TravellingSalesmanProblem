@@ -143,6 +143,10 @@ def ga_solve(file=None, gui=True, maxtime=0):
         for i in range(0, int(len(population) * mutation_percent)):
             mutate(population[random.randint(0, len(population) - 1)][0])
         gen += 1
+    result = []
+    for c in fittest[0]:
+        result.append(c[0])
+    return fittest[1], result
 
 
 def evaluate(population):
