@@ -19,7 +19,7 @@ summary_font = None
 cities = []
 population_size_percent = 1000 / 100
 elitism_percent = 30 / 100
-mutation_percent = 1 / 100
+mutation_percent = 20 / 100
 tournament_size = 15
 
 
@@ -141,6 +141,7 @@ def ga_solve(file=None, gui=True, maxtime=0):
         for i in range(0, int(len(population) * mutation_percent)):
             mutate(population[random.randint(0, len(population) - 1)][0])
         gen += 1
+        print((time.time() - t1) / gen)
 
     return fittest[1], [c[0] for c in fittest[0]]
 
@@ -163,8 +164,8 @@ def crossover(subpopulation, quantity):
 
 def mutate(solution):
     #mutate_swap(solution)
-    #mutate_2opt(solution)
-    mutate_reverse(solution)
+    mutate_2opt(solution)
+    #mutate_reverse(solution)
 
 
 def selection_elites(population, elite_quantity):
@@ -275,15 +276,22 @@ def mutate_swap(solution):
 
 
 def mutate_2opt(solution):
-    p1 = random.randint(0, len(solution) - 1)
-    p2 = p1 + 1 if p1 + 1 < len(solution) else 0
-    p3, p4 = p1, p2
-    while abs(p1 - p3) < 2 or abs(p2 - p4) < 2:
-        p3 = random.randint(0, len(solution) - 1)
-        p4 = p3 + 1 if p3 + 1 < len(solution) else 0
-    if distance_between(solution[p1], solution[p2]) + distance_between(solution[p3], solution[p4]) > distance_between(solution[p1], solution[p2]) + distance_between(solution[p3], solution[p4]):
-        solution[p2], solution[p3] = solution[p3], solution[p2]
-        reverse(solution, p2, p3)
+    improved = False
+    while not improved:
+        p1 = random.randint(0, len(solution) - 1)
+        p2 = p1 + 1 if p1 + 1 < len(solution) else 0
+        p3, p4 = p1, p2
+        while abs(p1 - p3) < 2 or abs(p2 - p4) < 2:
+            p3 = random.randint(0, len(solution) - 1)
+            p4 = p3 + 1 if p3 + 1 < len(solution) else 0
+        if distance_between(solution[p1], solution[p2]) + distance_between(solution[p3], solution[p4]) > distance_between(solution[p1], solution[p3]) + distance_between(solution[p2], solution[p4]):
+            solution[p2], solution[p3] = solution[p3], solution[p2]
+            reverse(solution, p2, p3)
+            improved = True
+        elif distance_between(solution[p1], solution[p2]) + distance_between(solution[p3], solution[p4]) > distance_between(solution[p1], solution[p4]) + distance_between(solution[p3], solution[p2]):
+            solution[p2], solution[p4] = solution[p4], solution[p2]
+            reverse(solution, p2, p4)
+            improved = True
 
 
 def mutate_reverse(solution):
