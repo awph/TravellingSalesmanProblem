@@ -7,9 +7,9 @@ from pygame.locals import KEYDOWN, QUIT, MOUSEBUTTONDOWN, K_RETURN
 
 # GUI
 screen = None
-city_color = (10, 10, 200) # blue
+city_color = (10, 10, 200)  # blue
 summary_color = (255, 255, 255)
-city_font_size = 16 # pixels
+city_font_size = 16  # pixels
 summary_font_size = 26
 screen_size = (500, 500)
 city_radius = 2
@@ -23,9 +23,9 @@ mutation_percent = 1 / 100
 tournament_size = 15
 
 
-def citiesFromFile(file):
+def cities_from_file(file):
     f = open(file, 'r')
-    cities = []
+    cities.clear()
     for line in f:
         comp = line.rstrip('\n').split(' ')
         city = (comp[0], (int(comp[1]), int(comp[2])))
@@ -34,8 +34,8 @@ def citiesFromFile(file):
     return cities
 
 
-def drawCities(positions, connected=False, generation=-1, distance=-1):
-    if screen == None:
+def draw_cities(positions, connected=False, generation=-1, distance=-1):
+    if screen is None:
         print(distance, ' => ', positions)
     else:
         screen.fill(0)
@@ -60,22 +60,22 @@ def drawCities(positions, connected=False, generation=-1, distance=-1):
         pygame.display.flip()
 
 
-def setupGui():
+def setup_gui():
     global screen, city_font, summary_font
     pygame.init()
     city_font = pygame.font.SysFont(None, city_font_size)
     summary_font = pygame.font.SysFont(None, summary_font_size)
     pygame.display.set_mode(screen_size)
-    pygame.display.set_caption('TSP')
+    pygame.display.set_caption('TSP by Alexandre Perez and Sébastien Vaucher')
     screen = pygame.display.get_surface()
 
 
-def citiesByMouse():
+def cities_by_mouse():
     global screen
-    wasGui = True
-    if screen == None:
-        wasGui = False
-        setupGui()
+    was_gui = True
+    if screen is None:
+        was_gui = False
+        setup_gui()
 
     collecting = True
     i = 0
@@ -89,9 +89,9 @@ def citiesByMouse():
                 city = ('v' + str(i), pygame.mouse.get_pos())
                 i += 1
                 cities.append(city)
-                drawCities(cities)
+                draw_cities(cities)
 
-    if not wasGui:
+    if not was_gui:
         pygame.quit()
         screen = None
 
@@ -101,14 +101,14 @@ def ga_solve(file=None, gui=True, maxtime=0):
     t1 = time.time()
 
     if gui:
-        setupGui()
+        setup_gui()
 
     if file is not None:
-        cities = citiesFromFile(file)
+        cities = cities_from_file(file)
     else:
-        citiesByMouse()
+        cities_by_mouse()
 
-    drawCities(cities)
+    draw_cities(cities)
 
     population_size = len(cities) * population_size_percent
     # population_size = min(population_size, len(cities) * (len(cities) + 1) / 2)
@@ -120,18 +120,19 @@ def ga_solve(file=None, gui=True, maxtime=0):
     fittest = None
 
     while maxtime == 0 or time.time() - t1 <= maxtime:
-        if screen != None:
+        if screen is None:
             if pygame.event.poll().type == QUIT:
                 sys.exit(0)
 
         # Evaluate
-        # evaluate(population) No need to evaluate(because score is always compute when new solution is done), just sort it
+        # evaluate(population) No need to evaluate because score is always computed when new solution is done, just sort it
         population.sort(key=lambda s: s[1])
         # Check the fittest
         if fittest is None or fittest[1] > population[0][1]:
             print("gen : ", gen)
             fittest = [population[0][0].copy(), population[0][1]]
-        drawCities(fittest[0], True, gen, fittest[1])
+        draw_cities(fittest[0], True, gen, fittest[1])
+
         # Selection
         elites = selection(population)
         # Crossover
@@ -354,4 +355,3 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
     ga_solve(args.filename, args.nogui, args.maxtime)
-
