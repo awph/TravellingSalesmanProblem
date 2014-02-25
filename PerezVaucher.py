@@ -35,9 +35,7 @@ def cities_from_file(file):
 
 
 def draw_cities(positions, connected=False, generation=-1, distance=-1):
-    if screen is None:
-        print(distance, ' => ', positions)
-    else:
+    if screen is not None:
         screen.fill(0)
         for pos in positions:
             text = city_font.render(pos[0], True, city_color, (0, 0, 0))
@@ -143,10 +141,8 @@ def ga_solve(file=None, gui=True, maxtime=0):
         for i in range(0, int(len(population) * mutation_percent)):
             mutate(population[random.randint(0, len(population) - 1)][0])
         gen += 1
-    result = []
-    for c in fittest[0]:
-        result.append(c[0])
-    return fittest[1], result
+
+    return fittest[1], [c[0] for c in fittest[0]]
 
 
 def evaluate(population):
@@ -173,10 +169,7 @@ def mutate(solution):
 
 def selection_elites(population, elite_quantity):
     # Sort for selection
-    elites = []
-    for i in range(0, elite_quantity):
-        elites.append(population[i])
-    return elites
+    return [population[i] for i in range(0, elite_quantity)]
 
 
 def selection_tournament(population, elite_quantity):
