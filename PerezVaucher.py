@@ -21,6 +21,7 @@ population_size_percent = 1000 / 100
 elitism_percent = 30 / 100
 mutation_percent = 20 / 100
 tournament_size = 15
+gen_without_better_solution_limit = 50
 
 
 def cities_from_file(file):
@@ -108,16 +109,18 @@ def ga_solve(file=None, gui=True, maxtime=0):
 
     draw_cities(cities)
 
-    population_size = len(cities) * population_size_percent
+    quantity_of_cities = len(cities)
+    population_size = quantity_of_cities * population_size_percent
     # population_size = min(population_size, len(cities) * (len(cities) + 1) / 2)
 
     # Initial population
     population = initial_population(cities, population_size)
 
     gen = 0
+    gen_without_better_solution = 0
     fittest = None
 
-    while maxtime == 0 or time.time() - t1 <= maxtime:
+    while (maxtime == 0 and gen_without_better_solution < gen_without_better_solution_limit)or time.time() - t1 <= maxtime:
         if screen is not None:
             for event in pygame.event.get():
                 if event.type == QUIT:
@@ -128,22 +131,28 @@ def ga_solve(file=None, gui=True, maxtime=0):
         population.sort(key=lambda s: s[1])
         # Check the fittest
         if fittest is None or fittest[1] > population[0][1]:
-            print("gen : ", gen)
+            gen_without_better_solution = 0
+            #print("gen : ", gen)
             fittest = [population[0][0].copy(), population[0][1]]
         draw_cities(fittest[0], True, gen, fittest[1])
 
-        # Selection
-        elites = selection(population)
-        # Crossover
-        children = crossover(elites, population_size - len(elites))
-        population = elites + children
+        # If the quantity of cities is less than 7,
+        # we don't make crossover. We just mutate on all the population
+        if quantity_of_cities > 6:
+            # Selection
+            elites = selection(population)
+            # Crossover
+            children = crossover(elites, population_size - len(elites))
+            population = elites + children
+
         # Mutate
         for i in range(0, int(len(population) * mutation_percent)):
             mutate(population[random.randint(0, len(population) - 1)][0])
         gen += 1
-        print((time.time() - t1) / gen)
+        gen_without_better_solution += 1
+        #print((time.time() - t1) / gen)
 
-    return fittest[1], [c[0] for c in fittest[0]]
+    return total_distance(fittest[0]), [c[0] for c in fittest[0]]
 
 
 def evaluate(population):
@@ -360,4 +369,4 @@ if __name__ == '__main__':
     parser.add_argument('filename', nargs='?', default=None)
 
     args = parser.parse_args()
-    ga_solve(args.filename, args.nogui, args.maxtime)
+    print(ga_solve(args.filename, args.nogui, args.maxtime))
