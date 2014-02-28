@@ -58,7 +58,9 @@ limit_mutation_try = 10
 
 
 def cities_from_file(file):
-	"""Load cities from the file given"""
+    """
+    Load cities from the file given
+    """
     f = open(file, 'r')
     cities.clear()
     for line in f:
@@ -70,8 +72,8 @@ def cities_from_file(file):
 
 
 def draw_cities(positions, connected=False, generation=-1, distance=-1):
-	"""Draw the cities passed in argument to the GUI"""
-	# GUI mode selected
+    """Draw the cities passed in argument to the GUI"""
+    # GUI mode selected
     if screen is not None:
         screen.fill(0)
         for pos in positions:
@@ -96,7 +98,7 @@ def draw_cities(positions, connected=False, generation=-1, distance=-1):
 
 
 def setup_gui():
-	"""Initialize the GUI"""
+    """Initialize the GUI"""
     global screen, city_font, summary_font
     pygame.init()
     city_font = pygame.font.SysFont(None, city_font_size)
@@ -107,11 +109,11 @@ def setup_gui():
 
 
 def cities_by_mouse():
-	"""Ask the user to set the locations of cities with his mouse"""
+    """Ask the user to set the locations of cities with his mouse"""
     global screen
     was_gui = True
-	# Check if we are in nogui mode, in which case the window must be created
-	# then destroyed at the end of the procedure
+    # Check if we are in nogui mode, in which case the window must be created
+    # then destroyed at the end of the procedure
     if screen is None:
         was_gui = False
         setup_gui()
@@ -161,7 +163,7 @@ def ga_solve(file=None, gui=True, maxtime=0):
 
     while (maxtime == 0 and gen_without_better_solution < gen_without_better_solution_limit) or time.time() - t1 <= maxtime:
         # Prevent GUI freezing
-		if screen is not None:
+        if screen is not None:
             for event in pygame.event.get():
                 if event.type == QUIT:
                     sys.exit(0)
@@ -173,7 +175,7 @@ def ga_solve(file=None, gui=True, maxtime=0):
         if fittest is None or fittest[1] > population[0][1]:
             gen_without_better_solution = 0
             fittest = [population[0][0].copy(), population[0][1]]
-			
+
         draw_cities(fittest[0], True, gen, fittest[1])
 
         # If the number of cities is less than 7,
