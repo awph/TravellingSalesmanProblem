@@ -3,26 +3,26 @@
         “Algorithmes génétiques”
 
         Alexandre Perez
-        Sébastion Vaucher
+        Sébastien Vaucher
         HE-Arc 2014
 
     ----------------------------
 
     Le codage des individus est de type à caractères multiples. L'algorithme commence donc par initialiser la population
-    de base avec comme taille 1000% du nombre de ville de départ. (500 pour 50 villes) Après évaluation de toutes ces
-    solutions, la meilleure est choisie. Puis tant que la meilleure solution n'est pas battue durant 50 fois génération,
+    de base avec comme taille 1000% du nombre de villes de départ (500 pour 50 villes). Après évaluation de toutes ces
+    solutions, la meilleure est choisie. Puis tant que la meilleure solution n'est pas battue durant 50 générations,
     l'algorithme effectue :
     1. Sélection :
-        Choisie 30% de la population, les meilleures d'entre eux. Cependant pour éviter de tomber dans un minimum local
-        on ne choisira pas des solutions similaires (dans la distance totale varie de moins de 1 e-6)
+        Choisit 30% de la population, les meilleurs d'entre eux. Cependant pour éviter de tomber dans un minimum local,
+        on ne choisira pas des solutions similaires (dont la distance totale varie de moins de 1 e-6)
     2. Croisement :
-        Croisement en deux points, tirage de deux point aléatoire et on remplace le chemin entre les deux points de la
-        première solution par ceux de la deuxième et inversement.
+        Croisement en deux points, tirage de deux points aléatoires, puis remplacement du chemin entre les deux
+         points de la première solution par ceux de la deuxième et inversement.
     3. Mutation :
-        Mutation avec la méthode 2opt, ou deux liaisons sont tirées au sort, puis si l'ordre dont sont relier ces 4
-        points (deux côté, donc 4 points) est meilleurs en les inversant alors on mute en les inversant et
-        en inversant le chemin en eux aussi.
-    4. Test si une meilleure solution existe dans la nouvelle population et recommence au point 1.
+        Mutation avec la méthode 2opt, où deux liaisons sont tirées au sort, puis si l'ordre dans lequel sont reliés
+        ces 4 points (deux côté, donc 4 points) est meilleur en les inversant, alors on mute en les inversant et
+        en inversant le chemin entre eux aussi.
+    4. Test si une meilleure solution existe dans la nouvelle population et reprise au point 1.
 """
 import pygame
 import math
@@ -34,30 +34,31 @@ from pygame.locals import KEYDOWN, QUIT, MOUSEBUTTONDOWN, K_RETURN
 # GUI
 screen = None
 city_color = (10, 10, 200)  # blue
-summary_color = (255, 255, 255)
+summary_color = (255, 255, 255)  # white
 city_font_size = 16  # pixels
-summary_font_size = 26
+summary_font_size = 26  # pixels
 screen_size = (500, 500)
 city_radius = 2
 city_font = None
 summary_font = None
 
 cities = []
-# Population size percent from the number of cities, here 1000%
+# Population size in percent of the number of cities, here 1000%
 population_size_percent = 1000 / 100
-# Quantity of elite for the selection, here 30% of the population
+# Quantity of elites for the selection, here 30% of the population
 elitism_percent = 30 / 100
-# Quantity of solution that we will mutate, here 20% of the population
+# Quantity of solutions that will be mutated, here 20% of the population
 mutation_percent = 20 / 100
 # Size of the tournament
 tournament_size = 15
-# Limit for stop generation if no better solution found
+# Number of worse solutions than the current one required to stop the generation
 gen_without_better_solution_limit = 50
-# Limit a mutation try before skip it
+# Mutation tentatives to try
 limit_mutation_try = 10
 
 
 def cities_from_file(file):
+	"""Load cities from the file given"""
     f = open(file, 'r')
     cities.clear()
     for line in f:
@@ -69,6 +70,8 @@ def cities_from_file(file):
 
 
 def draw_cities(positions, connected=False, generation=-1, distance=-1):
+	"""Draw the cities passed in argument to the GUI"""
+	# GUI mode selected
     if screen is not None:
         screen.fill(0)
         for pos in positions:
@@ -93,6 +96,7 @@ def draw_cities(positions, connected=False, generation=-1, distance=-1):
 
 
 def setup_gui():
+	"""Initialize the GUI"""
     global screen, city_font, summary_font
     pygame.init()
     city_font = pygame.font.SysFont(None, city_font_size)
@@ -103,8 +107,11 @@ def setup_gui():
 
 
 def cities_by_mouse():
+	"""Ask the user to set the locations of cities with his mouse"""
     global screen
     was_gui = True
+	# Check if we are in nogui mode, in which case the window must be created
+	# then destroyed at the end of the procedure
     if screen is None:
         was_gui = False
         setup_gui()
@@ -144,7 +151,6 @@ def ga_solve(file=None, gui=True, maxtime=0):
 
     quantity_of_cities = len(cities)
     population_size = quantity_of_cities * population_size_percent
-    # population_size = min(population_size, len(cities) * (len(cities) + 1) / 2)
 
     # Initial population
     population = initial_population(cities, population_size)
@@ -154,7 +160,8 @@ def ga_solve(file=None, gui=True, maxtime=0):
     fittest = None
 
     while (maxtime == 0 and gen_without_better_solution < gen_without_better_solution_limit) or time.time() - t1 <= maxtime:
-        if screen is not None:
+        # Prevent GUI freezing
+		if screen is not None:
             for event in pygame.event.get():
                 if event.type == QUIT:
                     sys.exit(0)
@@ -165,11 +172,11 @@ def ga_solve(file=None, gui=True, maxtime=0):
         # Check the fittest
         if fittest is None or fittest[1] > population[0][1]:
             gen_without_better_solution = 0
-            #print("gen : ", gen)
             fittest = [population[0][0].copy(), population[0][1]]
+			
         draw_cities(fittest[0], True, gen, fittest[1])
 
-        # If the quantity of cities is less than 7,
+        # If the number of cities is less than 7,
         # we don't make crossover. We just mutate on all the population
         if quantity_of_cities > 6:
             # Selection
@@ -183,7 +190,6 @@ def ga_solve(file=None, gui=True, maxtime=0):
             mutate(population[random.randint(0, len(population) - 1)][0])
         gen += 1
         gen_without_better_solution += 1
-        #print((time.time() - t1) / gen)
 
     return total_distance(fittest[0]), [c[0] for c in fittest[0]]
 
@@ -231,9 +237,9 @@ def selection_elites(population, elite_quantity):
 
 def selection_tournament(population, elite_quantity):
     """
-    Return N solution from population by apply a tournament selection. Where N = elite_quantity
-    We take X(tournament_size) solution from the population, then we save the best solution, and delete it from the population.
-    We return all solution saved.
+    Return N solutions from population by applying a tournament selection. Where N = elite_quantity
+    We take X(tournament_size) solutions from the population, then we save the best solution, and delete it from the population.
+    We return all the saved solutions.
     """
     winners = []
     for i in range(0, elite_quantity):
@@ -251,8 +257,8 @@ def selection_tournament(population, elite_quantity):
 
 def selection_SENGOKU(population, elite_quantity):
     """
-    Return N solution from population by apply a natural selection. Where N = elite_quantity
-    We want the best. For keep the diversity of the population, we remove all similar solutions.
+    Return N solutions from the population by applying a natural selection. Where N = elite_quantity
+    We want the best. In order to get the greatest diversity from the population, we remove all similar solutions.
     By removing the similar solutions, we won't go to a local minima.
     """
     i = 1
@@ -269,7 +275,7 @@ def selection_SENGOKU(population, elite_quantity):
 def crossover_two_points(subpopulation, quantity):
     """
     Apply the two points crossover function on the subpopulation.
-    Return N new solution. Where N = quantity
+    Return N new solutions. Where N = quantity
     """
     crossed = []
     while len(crossed) < quantity:
@@ -320,7 +326,7 @@ def cross_two_solutions(solution1, solution2, p1, p2):
 
 def pack_cities(solution, middle_cities, p1, p2):
     """
-    Pack all the cities to a to the right of the p2 point.
+    Pack all the cities to the right of the p2 point.
     Then all points between p1 and p2 are None.
     """
     for i in range(0, len(solution)):
@@ -345,7 +351,7 @@ def pack_cities(solution, middle_cities, p1, p2):
 
 def mutate_swap(solution):
     """
-    Just swap two randoms points of the solution
+    Just swap two random points of the solution
     """
     p1 = random.randint(0, len(solution) - 1)
     p2 = p1
@@ -358,7 +364,7 @@ def mutate_swap(solution):
 
 def mutate_2opt(solution):
     """
-    Take two random edge, and check if we reverse the path between points of the edges improve out solution.
+    Take two random edges, and check if the reversal of the path between points of the edges improves our solution.
     If it's improved, then do the mutation
     """
     improved = False
@@ -385,7 +391,7 @@ def mutate_2opt(solution):
 
 def mutate_reverse(solution):
     """
-    Mutate just by reverse a path between two random points
+    Mutate just by reversing a path between two random points
     """
     p1 = random.randint(0, len(solution) - 1)
     p2 = p1
@@ -423,7 +429,7 @@ def is_solutions_equal(solution1, solution2):
 
 def total_distance(solution):
     """
-    Return total distance between all cities, with the distance front the last and the first
+    Return total distance between all cities, in a circular way (including distance between last and first)
     """
     distance = 0
     c2 = None
